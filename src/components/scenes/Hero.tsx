@@ -16,7 +16,7 @@ import {
 import * as THREE from "three";
 
 function EnhancedTorus() {
-  const torusRef = useRef<any>(null);
+  const torusRef = useRef<THREE.Mesh>(null);
 
   useFrame((state, delta) => {
     if (torusRef.current) {
