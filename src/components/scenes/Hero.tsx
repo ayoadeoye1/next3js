@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, Suspense, useMemo, useState, useEffect } from "react";
+import React, { useRef, Suspense, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Stars,
@@ -12,26 +12,9 @@ import {
   Environment,
   Float,
   OrbitControls,
+  useTexture,
 } from "@react-three/drei";
 import * as THREE from "three";
-
-// Mobile detection hook
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  return isMobile;
-}
 
 function EnhancedTorus() {
   const torusRef = useRef<THREE.Mesh>(null);
@@ -71,9 +54,16 @@ function AvatarCube() {
 
   return (
     <Box ref={cubeRef} position={[2, 0, -5]} args={[3, 3, 3]}>
-      <meshBasicMaterial color="#4a90e2" />
+      <Suspense fallback={<meshBasicMaterial color="#4a90e2" />}>
+        <AvatarTexture />
+      </Suspense>
     </Box>
   );
+}
+
+function AvatarTexture() {
+  const texture = useTexture("/assets/ayobami.png");
+  return <meshBasicMaterial map={texture} />;
 }
 
 function Moon() {
@@ -176,9 +166,84 @@ function OptimizedStars() {
   );
 }
 
-function SceneContent() {
-  const isMobile = useIsMobile();
+interface GlowingTextProps {
+  children: React.ReactNode;
+  position: [number, number, number];
+  fontSize: number;
+  color?: string;
+  glowColor?: string;
+}
 
+function GlowingText({
+  children,
+  position,
+  fontSize,
+  color = "#ffffff",
+  glowColor = "#ffff00",
+}: GlowingTextProps) {
+  const textRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (textRef.current && textRef.current.material) {
+      // Subtle pulsing effect like a bulb
+      const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      if ("emissiveIntensity" in textRef.current.material) {
+        (
+          textRef.current.material as THREE.MeshStandardMaterial
+        ).emissiveIntensity = pulse * 0.3;
+      }
+    }
+  });
+
+  return (
+    <group>
+      {/* Multiple point lights around the text to simulate bulb lighting */}
+      <pointLight
+        position={[position[0], position[1] + 1, position[2] + 2]}
+        intensity={2}
+        color={glowColor}
+        distance={10}
+        decay={2}
+      />
+      <pointLight
+        position={[position[0] - 2, position[1], position[2] + 2]}
+        intensity={1.5}
+        color={glowColor}
+        distance={8}
+        decay={2}
+      />
+      <pointLight
+        position={[position[0] + 2, position[1], position[2] + 2]}
+        intensity={1.5}
+        color={glowColor}
+        distance={8}
+        decay={2}
+      />
+
+      {/* The actual glowing text */}
+      <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
+        <Text
+          ref={textRef}
+          position={position}
+          fontSize={fontSize}
+          color={color}
+          anchorX="center"
+          anchorY="middle"
+        >
+          <meshStandardMaterial
+            color={color}
+            emissive={glowColor}
+            emissiveIntensity={0.3}
+            toneMapped={false}
+          />
+          {children}
+        </Text>
+      </Float>
+    </group>
+  );
+}
+
+function SceneContent() {
   return (
     <>
       <ScrollCamera />
@@ -193,29 +258,23 @@ function SceneContent() {
       <OptimizedFloatingObjects />
       <OptimizedStars />
 
-      <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
-        <Text
-          position={[0, 8, -10]}
-          fontSize={isMobile ? 2 : 3}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-        >
-          AYOBAMI ADEOYE
-        </Text>
-      </Float>
+      <GlowingText
+        position={[0, 8, -10]}
+        fontSize={window.innerWidth > 768 ? 3 : 2}
+        color="#ffffff"
+        glowColor="#ffff88"
+      >
+        AYOBAMI ADEOYE
+      </GlowingText>
 
-      <Float speed={1.5} rotationIntensity={0.05} floatIntensity={0.1}>
-        <Text
-          position={[-2, -2, 20]}
-          fontSize={isMobile ? 0.3 : 0.8}
-          color="#ff6347"
-          anchorX="center"
-          anchorY="middle"
-        >
-          SOFTWARE ENGINEER ✌🏽
-        </Text>
-      </Float>
+      <GlowingText
+        position={[-2, -2, 20]}
+        fontSize={window.innerWidth > 768 ? 0.8 : 0.3}
+        color="#ff6347"
+        glowColor="#ff4444"
+      >
+        SOFTWARE ENGINEER ✌🏽
+      </GlowingText>
 
       <Environment preset="night" />
 
@@ -227,7 +286,7 @@ function SceneContent() {
 function Fallback() {
   return (
     <mesh>
-      <boxGeometry args={[1, 1, 1]} />
+      <boxGeometry args={[0, -4, 5]} />
       <meshBasicMaterial color="orange" />
     </mesh>
   );
@@ -244,8 +303,7 @@ export default function Hero() {
         left: 0,
         zIndex: 1,
         overflow: "hidden",
-        touchAction: "pan-y",
-        WebkitOverflowScrolling: "touch",
+        touchAction: "none",
       }}
     >
       <Canvas
@@ -254,7 +312,7 @@ export default function Hero() {
           background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
           width: "100%",
           height: "100%",
-          touchAction: "none",
+          touchAction: "scroll",
         }}
         gl={{
           antialias: false,
@@ -269,15 +327,7 @@ export default function Hero() {
         performance={{ min: 0.8 }}
       >
         <Suspense fallback={<Fallback />}>
-          <ScrollControls
-            pages={2}
-            damping={0.1}
-            infinite={false}
-            horizontal={false}
-            style={{
-              touchAction: "pan-y",
-            }}
-          >
+          <ScrollControls pages={2} damping={0.1}>
             <SceneContent />
           </ScrollControls>
         </Suspense>
@@ -288,9 +338,6 @@ export default function Hero() {
           enableRotate={true}
           autoRotate={true}
           autoRotateSpeed={0.5}
-          enabled={
-            typeof window !== "undefined" ? window.innerWidth > 768 : true
-          }
         />
       </Canvas>
     </div>
