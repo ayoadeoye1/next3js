@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, Suspense, useMemo } from "react";
+import React, { useRef, Suspense, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Stars,
@@ -14,6 +14,24 @@ import {
   OrbitControls,
 } from "@react-three/drei";
 import * as THREE from "three";
+
+// Mobile detection hook
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 function EnhancedTorus() {
   const torusRef = useRef<THREE.Mesh>(null);
@@ -159,6 +177,8 @@ function OptimizedStars() {
 }
 
 function SceneContent() {
+  const isMobile = useIsMobile();
+
   return (
     <>
       <ScrollCamera />
@@ -176,7 +196,7 @@ function SceneContent() {
       <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
         <Text
           position={[0, 8, -10]}
-          fontSize={window.innerWidth > 768 ? 3 : 2}
+          fontSize={isMobile ? 2 : 3}
           color="#ffffff"
           anchorX="center"
           anchorY="middle"
@@ -188,7 +208,7 @@ function SceneContent() {
       <Float speed={1.5} rotationIntensity={0.05} floatIntensity={0.1}>
         <Text
           position={[-2, -2, 20]}
-          fontSize={window.innerWidth > 768 ? 0.8 : 0.3}
+          fontSize={isMobile ? 0.3 : 0.8}
           color="#ff6347"
           anchorX="center"
           anchorY="middle"
@@ -224,6 +244,8 @@ export default function Hero() {
         left: 0,
         zIndex: 1,
         overflow: "hidden",
+        touchAction: "pan-y",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       <Canvas
@@ -232,6 +254,7 @@ export default function Hero() {
           background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
           width: "100%",
           height: "100%",
+          touchAction: "none",
         }}
         gl={{
           antialias: false,
@@ -246,7 +269,15 @@ export default function Hero() {
         performance={{ min: 0.8 }}
       >
         <Suspense fallback={<Fallback />}>
-          <ScrollControls pages={2} damping={0.1}>
+          <ScrollControls
+            pages={2}
+            damping={0.1}
+            infinite={false}
+            horizontal={false}
+            style={{
+              touchAction: "pan-y",
+            }}
+          >
             <SceneContent />
           </ScrollControls>
         </Suspense>
@@ -257,6 +288,9 @@ export default function Hero() {
           enableRotate={true}
           autoRotate={true}
           autoRotateSpeed={0.5}
+          enabled={
+            typeof window !== "undefined" ? window.innerWidth > 768 : true
+          }
         />
       </Canvas>
     </div>
