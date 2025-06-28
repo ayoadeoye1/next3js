@@ -62,7 +62,12 @@ function AvatarCube() {
 }
 
 function AvatarTexture() {
-  const texture = useTexture("/assets/ayobami.png");
+  const imagePath =
+    process.env.GITHUB_PAGES
+      ? "/next3js/assets/ayobami.png"
+      : "/assets/ayobami.png";
+
+  const texture = useTexture(imagePath);
   return <meshBasicMaterial map={texture} />;
 }
 
@@ -157,7 +162,7 @@ function OptimizedStars() {
     <Stars
       radius={50}
       depth={30}
-      count={10000}
+      count={800}
       factor={4}
       saturation={0}
       fade
