@@ -1,15 +1,23 @@
 import type { NextConfig } from "next";
 
-const path = process.env.GITHUB_PAGES ? "/next3js" : undefined;
+// Handle different deployment environments
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
+const isVercel = process.env.VERCEL === "1";
+
+const basePath = isGitHubPages ? "/next3js" : undefined;
 
 const nextConfig: NextConfig = {
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
 
-  output: "export",
+  // Only use export output for GitHub Pages, Vercel handles this automatically
+  ...(isGitHubPages && { output: "export" }),
   trailingSlash: true,
 
-  basePath: path,
-  assetPrefix: path,
+  // Only set basePath and assetPrefix for GitHub Pages
+  ...(isGitHubPages && {
+    basePath: basePath,
+    assetPrefix: basePath,
+  }),
 
   images: {
     unoptimized: true,
@@ -17,6 +25,15 @@ const nextConfig: NextConfig = {
 
   experimental: {
     esmExternals: true,
+  },
+
+  // Add webpack config for better Three.js handling
+  webpack: (config) => {
+    config.externals = config.externals || [];
+    config.externals.push({
+      canvas: "canvas",
+    });
+    return config;
   },
 };
 
