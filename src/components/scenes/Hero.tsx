@@ -61,48 +61,11 @@ function AvatarCube() {
   );
 }
 
-// Utility function to get the correct asset path
-function getAssetPath(assetPath: string): string {
-  if (typeof window === "undefined") {
-    return assetPath; // Server-side rendering
-  }
-
-  // Check if we're on GitHub Pages
-  if (
-    window.location.hostname.includes("github.io") ||
-    window.location.pathname.includes("/next3js")
-  ) {
-    return `/next3js${assetPath}`;
-  }
-
-  // Default path for local development and Vercel
-  return assetPath;
-}
-
 function AvatarTexture() {
-  const imagePath = getAssetPath("/assets/ayobami.png");
+  const imagePath = "/assets/ayobami.png";
 
-  try {
-    const texture = useTexture(imagePath);
-    return <meshBasicMaterial map={texture} />;
-  } catch (error) {
-    console.warn("Failed to load avatar texture, using fallback color");
-    return <meshBasicMaterial color="#4a90e2" />;
-  }
-}
-
-// Add error boundary for avatar cube
-function SafeAvatarCube() {
-  try {
-    return <AvatarCube />;
-  } catch (error) {
-    console.warn("Avatar cube failed to load, using fallback");
-    return (
-      <Box position={[2, 0, -5]} args={[3, 3, 3]}>
-        <meshBasicMaterial color="#4a90e2" />
-      </Box>
-    );
-  }
+  const texture = useTexture(imagePath);
+  return <meshBasicMaterial map={texture} />;
 }
 
 function Moon() {
@@ -292,16 +255,14 @@ function SceneContent() {
       <pointLight position={[-5, 2, 5]} intensity={0.5} color="#4a90e2" />
 
       <EnhancedTorus />
-      <SafeAvatarCube />
+      <AvatarCube />
       <Moon />
       <OptimizedFloatingObjects />
       <OptimizedStars />
 
       <GlowingText
         position={[0, 8, -10]}
-        fontSize={
-          typeof window !== "undefined" && window.innerWidth > 768 ? 3 : 2
-        }
+        fontSize={window.innerWidth > 768 ? 3 : 2}
         color="#ffffff"
         glowColor="#ffff88"
       >
@@ -310,18 +271,14 @@ function SceneContent() {
 
       <GlowingText
         position={[-2, -2, 20]}
-        fontSize={
-          typeof window !== "undefined" && window.innerWidth > 768 ? 0.8 : 0.3
-        }
+        fontSize={window.innerWidth > 768 ? 0.8 : 0.3}
         color="#ff6347"
         glowColor="#ff4444"
       >
         SOFTWARE ENGINEER ✌🏽
       </GlowingText>
 
-      {/* Replace Environment component with simple lighting to avoid external HDR loading issues */}
-      <ambientLight intensity={0.4} color="#1a1a2e" />
-      <hemisphereLight color="#1a1a2e" groundColor="#16213e" intensity={0.3} />
+      <Environment preset="night" />
 
       <fog attach="fog" args={["#1a1a2e", 10, 40]} />
     </>
@@ -368,11 +325,7 @@ export default function Hero() {
           premultipliedAlpha: false,
           preserveDrawingBuffer: false,
         }}
-        dpr={
-          typeof window !== "undefined"
-            ? Math.min(window.devicePixelRatio, 1.5)
-            : 1
-        }
+        dpr={Math.min(window.devicePixelRatio, 1.5)}
         performance={{ min: 0.8 }}
       >
         <Suspense fallback={<Fallback />}>
