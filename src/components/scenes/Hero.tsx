@@ -62,10 +62,7 @@ function AvatarCube() {
 }
 
 function AvatarTexture() {
-  const imagePath =
-    process.env.GITHUB_PAGES
-      ? "/next3js/assets/ayobami.png"
-      : "/assets/ayobami.png";
+  const imagePath = "/assets/ayobami.png";
 
   const texture = useTexture(imagePath);
   return <meshBasicMaterial map={texture} />;
